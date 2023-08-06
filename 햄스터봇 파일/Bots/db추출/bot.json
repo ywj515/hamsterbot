@@ -1,0 +1,16 @@
+{
+    "main": "db추출.js",
+    "option": {
+        "apiLevel": 1,
+        "useUnifiedParams": false,
+        "useBabel": false,
+        "scriptPower": false,
+        "debugRoom": {
+            "name": "DEBUG ROOM",
+            "sender": "DSHS0509108754",
+            "isGroupChat": false,
+            "packageName": "com.xfl.msgbot"
+        },
+        "sort": true
+    }
+}

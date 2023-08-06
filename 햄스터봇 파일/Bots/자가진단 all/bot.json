@@ -1,0 +1,21 @@
+{
+    "main": "자가진단.js",
+    "option": {
+        "apiLevel": 1,
+        "useUnifiedParams": false,
+        "useBabel": false,
+        "scriptPower": false,
+        "debugRoom": {
+            "name": "b.",
+            "sender": "DSHS2230302020",
+            "isGroupChat": true,
+            "packageName": "com.xfl.msgbot"
+        },
+        "offOnRuntimeError": false,
+        "targetMessengers": {
+            "com.facebook.orca": false
+        },
+        "backupDBOnDelete": false,
+        "sort": false
+    }
+}

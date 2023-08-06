@@ -1,0 +1,61 @@
+import {PythonShell} from 'python-shell';
+import express from 'express';
+const app = express();
+import logger from 'morgan';
+import bodyParser from 'body-parser';
+import fs from 'fs';
+import request from 'request';
+
+const apiRouter = express.Router();
+
+app.use(logger('dev', {}));
+
+app.use(express.json());
+
+app.use(bodyParser.urlencoded({
+
+  extended: true
+
+}));
+
+app.use('/api', apiRouter);
+
+
+apiRouter.post('/selfcheck', function(req, res) {
+
+        let type = req.query.type;
+        let name = req.query.name;
+        let birth = req.query.birth;
+        let location = req.query.location;
+        let schoolname = req.query.schoolname;
+        let schooltype = req.query.schooltype;
+        let password = req.query.password;
+
+
+let options = {
+        mode: 'text',
+        //pythonPath: '/data/data/com.termux/files/usr/bin/python3.9',
+         pythonOptions: ['-u'],
+        Path: './',
+        args: [type,name,birth,location,schoolname,schooltype,password]
+};
+
+PythonShell.run('selfcheck.py', options, function (err, results) {
+        if (err) throw err;
+        else {
+                console.log("ok")
+                res.send(results)
+        }
+         });
+
+
+    }
+);
+
+
+app.listen(3000, function() {
+
+  console.log('Example skill server listening on port 3000!');
+
+});
+~

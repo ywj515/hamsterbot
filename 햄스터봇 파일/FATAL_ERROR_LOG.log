@@ -1,0 +1,15 @@
+java.lang.RuntimeException: android.os.TransactionTooLargeException: data parcel size 1276728 bytes
+	at android.app.servertransaction.PendingTransactionActions$StopInfo.run(PendingTransactionActions.java:161)
+	at android.os.Handler.handleCallback(Handler.java:938)
+	at android.os.Handler.dispatchMessage(Handler.java:99)
+	at android.os.Looper.loop(Looper.java:246)
+	at android.app.ActivityThread.main(ActivityThread.java:8512)
+	at java.lang.reflect.Method.invoke(Native Method)
+	at com.android.internal.os.RuntimeInit$MethodAndArgsCaller.run(RuntimeInit.java:602)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:1130)
+Caused by: android.os.TransactionTooLargeException: data parcel size 1276728 bytes
+	at android.os.BinderProxy.transactNative(Native Method)
+	at android.os.BinderProxy.transact(BinderProxy.java:605)
+	at android.app.IActivityTaskManager$Stub$Proxy.activityStopped(IActivityTaskManager.java:4971)
+	at android.app.servertransaction.PendingTransactionActions$StopInfo.run(PendingTransactionActions.java:145)
+	... 7 more

@@ -1,0 +1,296 @@
+const scriptName = "자가진단 all";
+
+
+
+const FS = FileStream;
+const path = '/sdcard/hamsterbot/selfcheck/newselfcheckall.txt';
+
+if (!FS.read(path)) FS.write(path, "[]");
+
+
+const pathgs = '/sdcard/hamsterbot/bab/bab.json';
+const enteru = "\u200b".repeat(500);
+if (!FS.read(pathgs)) FS.write(pathgs,JSON.stringify({},null,3));
+
+function whatweek(da){
+  var li=["일","월","화","수","목","금","토","일"];
+  return li[da];
+}
+
+function getdat(month,day){
+  try{ return Jsoup.connect("https://open.neis.go.kr/hub/mealServiceDietInfo?Key=6146ee67c310498693006539893cbd68&Type=json&ATPT_OFCDC_SC_CODE=G10&SD_SCHUL_CODE=7430032&MLSV_YMD=2021" + month + day).ignoreContentType(true).ignoreHttpErrors(true).get().toString();
+  }catch(error){
+    java.lang.Thread.sleep(2000);
+    return getdat(month,day);
+  }
+}
+
+function bab(dmonth, dday) {
+  bld = ["breakfast", "lunch", "dinner"];
+  if (dmonth < 10) 
+    dmonth = "0" + String(dmonth);
+  if (dday < 10) 
+    dday = "0" + String(dday);
+  var ddb = JSON.parse(FS.read(pathgs));
+  var ddt = dmonth + dday;
+  if (ddb[ddt] == undefined) {
+    var dresult = [];
+    var ddat = getdat(dmonth,dday);
+    if(ddat.indexOf("INFO-200")!=-1) return "\n\n해당 날짜의 급식 정보가 없습니다.";
+    else{
+    var dda = ddat.replace(/(<html>|<\/html>|<head>|<\/head>|<body>|<\/body>)/g, "").replace(/\n/g, "");
+    dda = JSON.parse(dda);
+    try{
+    dda = dda["mealServiceDietInfo"][1]["row"];
+    for (i = 0; i < 3; i++) {
+      try {
+        var data = dda[i]["DDISH_NM"];
+        var cal=dda[i]["CAL_INFO"];
+        bae = bld[i];
+        data = data.trim();
+        data = data.replace(/([0-9]+)+\.|\*|(\(([^)]+)\))/g, "");
+        data = data.replace(/,/g, "");
+        data = data.replace("\":[\"", "");
+        data = data.replace("\"]\"", "");
+        data = data.replace(/amp;/g, "");
+        data = data.replace(/  <br>/g, "\n ");
+        dresult[i] = " ("+cal+")\n " + data;
+      }      catch (e) {
+  dresult[i] = "\n 급식 정보가 없습니다.";
+}
+}
+    }
+    catch(e){
+  dresult[0] = "\n 급식 정보가 없습니다.";
+  dresult[1] = "\n 급식 정보가 없습니다.";
+  dresult[2] = "\n 급식 정보가 없습니다.";
+}
+    var dtemp = "\n\n[아침]" + dresult[0] + "\n\n[점심]" + dresult[1] + "\n\n[저녁]" + dresult[2];
+    ddb[ddt] = dtemp;
+    FS.write(pathgs, JSON.stringify(ddb, null, 3));
+    return dtemp;
+  }
+  
+  } else {
+    return ddb[ddt];
+  }
+}
+
+
+
+
+
+var CovidVirusCheck = {
+    setting: JSON.parse(FS.read(path))
+};
+
+const key = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA81dCnCKt0NVH7j5Oh2+SGgEU0aqi5u6sYXemouJWXOlZO3jqDsHYM1qfEjVvCOmeoMNFXYSXdNhflU7mjWP8jWUmkYIQ8o3FGqMzsMTNxr+bAp0cULWu9eYmycjJwWIxxB7vUwvpEUNicgW7v5nCwmF5HS33Hmn7yDzcfjfBs99K5xJEppHG0qc+q3YXxxPpwZNIRFn0Wtxt0Muh1U8avvWyw03uQ/wMBnzhwUC8T4G5NclLEWzOQExbQ4oDlZBv8BM/WxxuOyu0I8bDUDdutJOfREYRZBlazFHvRKNNQQD2qDfjRz484uFs7b5nykjaMB9k/EJAuHjJzGs9MMMWtQIDAQAB";
+
+function response(room, msg, sender, s, replier, n, e) {
+  
+    if (room=="b방장봇방"&&msg=="/자가진단") {
+      replier.reply("b방장봇방","시도");
+      Log.i("봇 ");
+     let da = new Date();
+  var mon=da.getMonth()+1;
+  var day=da.getDate();
+  var yo=da.getDay();
+  var check= new Date(2021,mon,0).getDate();
+  var yoill1=whatweek(da.getDay());
+  var yoill2=whatweek(da.getDay()+1); 
+  
+  
+  
+  
+ // if(bab(mon,day)=="\n\n해당 날짜의 급식 정보가 없습니다.") return 0;
+  
+  
+  
+  if(yoill1=="토"||yoill2=="일"){
+    java.lang.Thread.sleep(3200000);
+  }
+       CovidVirusCheck.setting= JSON.parse(FS.read(path)).sort(() => Math.random() - 0.5);
+        result=new Array();
+        var pnum=CovidVirusCheck.setting.length;
+        replier.reply(pnum);
+        var num1=3000000/pnum;
+        var temp2=133000/pnum;
+        var cnt=0;
+        while(cnt<200){
+          interval=new Array();
+          var temp=0;
+          var ti=0;
+          for(var tk=0;tk<pnum;tk++)
+          {
+           while(true){
+           ti=Math.floor(num1+31.7*(Math.floor((Math.random()-0.5)*temp2)));
+           if(ti<0) continue;
+           else break;
+            }
+            temp+=ti;
+            interval.push(ti);
+          }
+         if(temp>2900000&&temp<3100000) break;
+          else{
+            cnt+=1;
+            continue;
+            }
+        }
+        if(!(temp>2900000&&temp<3100000)) return 0;
+        var ress="";
+        for(var tk=0;tk<pnum;tk++){
+          ress+=interval[tk]+"\n";
+        }
+       // replier.reply("b전체방","《자가진단 설문항목 및 링크》"+"\u200b".repeat(500)+"\n\n자가진단 링크: https://hcs.eduro.go.kr/\n\n1. 학생 본인이 코로나19가 의심되는 아래의 임상증상*이 있나요?\n* (주요 임상증상) 체온 37.5℃ 이상, 기침, 호흡곤란, 오한, 근육통, 두통, 인후통,후각·미각 소실 또는 폐렴.\n* (단, 코로나19와 관계없이 평소의 기저질환으로 인한 증상인 경우는 제외)\n\n2. 학생 본인 또는 동거인이 코로나19 의심증상으로 진단검사를 받고 그 결과를 기다리고 있나요?\n\n3. 학생 본인 또는 동거인이 방역당국에 의해 현재 자가격리가 이루어지고 있나요?\n※ <방역당국 지침> 최근 14일 이내 해외 입국자, 확진자와 접촉자 등은 자가격리 조치\n단, 직업특성상 잦은 해외 입·출국으로 의심증상이 없는 경우 자가격리 면제");
+       replier.reply("b방장봇방","자가진단 시작! (총 "+pnum+"명)");
+        var cnt=0;
+        var errcnt=0;
+        var res = '';
+      
+        for(var i=0;i<CovidVirusCheck.setting.length;i++){
+        if(interval[i]==undefined) interval[i]=3000;
+        var sub=doSelfCheck("tokenselfcheck",CovidVirusCheck.setting[i].Token);
+        if(sub.error){
+          res+=CovidVirusCheck.setting[i].Name +" "+ CovidVirusCheck.setting[i].Birth + " : " + sub.message+ "\n";
+          errcnt+=1;
+        } 
+          cnt+=1;
+          Log.i(interval[i]+"\n"+cnt+"번째 완료\n"+sub);
+          java.lang.Thread.sleep(Number(interval[i]));
+        }
+        
+       replier.reply("b방장봇방","✅자가진단 완료 (에러: "+errcnt+"명)" + "\u200b".repeat(500) + "\n\n" + res);
+      
+     //  replier.reply("b전체방","(오늘) "+mon+"월 "+day+"일 ("+yoill1+") 급식"+"\u200b".repeat(500)+ bab(mon,day));
+ // if(day+1<=check){
+ //   if(bab(mon,day+1)!="\n\n해당 날짜의 급식 정보가 없습니다.")
+  //  replier.reply("b전체방","(내일) "+mon+"월 "+(day+1)+"일 ("+yoill2+") 급식"+"\u200b".repeat(500)+ bab(mon,day+1));
+ // }
+  //else{
+   // if(bab(mon+1,1)!="\n\n해당 날짜의 급식 정보가 없습니다.")
+  //  replier.reply("b전체방","(내일) "+(mon+1)+"월 "+(1)+"일 ("+yoill2+") 급식"+"\u200b".repeat(500)+ bab(mon+1,1));
+  //   }
+  
+  
+    }
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+    if(room=="b방장봇방"&&msg=="/자가진단수동"){
+      replier.reply("b방장봇방","ㅇㅇ");
+      CovidVirusCheck.setting= JSON.parse(FS.read(path)).sort(() => Math.random() - 0.5);
+        var result = new Array();
+        res="";
+        errcnt=0;
+        for (i = 0; i < CovidVirusCheck.setting.length; i++){
+         var temp=doSelfCheck("tokenselfcheck",CovidVirusCheck.setting[i].Token);
+         if(temp.error){
+           res+=CovidVirusCheck.setting[i].Name +" "+ CovidVirusCheck.setting[i].Birth + " : " + temp.message + "\n\n";
+            errcnt+=1;
+        }
+        } 
+       replier.reply("b방장봇방","✅자가진단 완료 (에러: "+errcnt+"명)" + "\u200b".repeat(500) + "\n\n" + res);
+    }
+    
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+    if (sender.startsWith("DSHS")&&msg.startsWith('/추가')) {
+       
+        var str = msg.replace(/(|)/g,"").substr(4).split('/');
+        
+        if(str[2]==undefined) replier.reply("형식에 맞게 입력했는지 다시 한번 확인해주세요.\n(ex. /추가 홍길동/040101/1234)");
+        else{
+        i=CovidVirusCheck.setting.length;
+        if(getUserIDRegistered(str[0],str[1])) replier.reply("이미 등록되어 있습니다.\n정보 변경이 필요하시면 관리자에게 연락바랍니다.");
+      else{
+        replier.reply ("등록 시도 중......")
+      var token=doSelfCheck("generatetoken","",str[0],str[1],"대전","대전과학고등학교","고",str[2]);
+        if(token.error){
+          replier.reply("⚠️등록 실패!\n에러 내용: "+resu.message+"\n명령어가 형식에 맞는지, 비밀번호가 맞는지 확인해주세요.\nex) /추가 홍길동/040101/1234");
+           return 0;
+        }
+        
+        var resu=doSelfCheck("tokenselfcheck",token.token);
+        if(resu.error){
+         replier.reply("⚠️등록 실패!\n에러 내용: "+resu.message+"\n명령어가 형식에 맞는지, 비밀번호가 맞는지 확인해주세요.\nex) /추가 홍길동/040101/1234");
+        return 0;
+        }
+        else replier.reply(str[0] + '님 등록 완료!\n자가진단 결과: '+resu.message);
+      CovidVirusCheck.setting.push({
+            "Name": str[0],
+         "Birth": str[1],
+            "Token": token.token
+        });
+        FS.write(path, JSON.stringify(CovidVirusCheck.setting, null, 4));
+        }
+        }
+    }
+   
+   
+   
+   
+   
+}
+
+
+
+
+importClass(org.jsoup.Jsoup);
+
+function getUserIDRegistered(name,birth){ //로컬에 아이디가 등록이 되어있는지 확인하고 리턴함.
+  var arr1=CovidVirusCheck.setting.filter(isName,name);
+  var arr2=CovidVirusCheck.setting.filter(isBirth,birth);
+  if((arr1[0]!=undefined)&&(arr2[0]!=undefined)) return true;
+  else return false;
+}
+
+function isName(element){
+  if(element.Name == this) {
+    return true;
+    }
+}
+
+function isBirth(element){
+  if(element.Birth == this) {
+    return true;
+    }
+}
+
+
+function doSelfCheck(type,token,name,birth,location,schoolname,schooltype,password){
+
+var res = JSON.parse (org.jsoup.Jsoup.connect("http://localhost:3000/api/selfcheck")   
+.header("Content-Type", 'text/plain; charset=utf-8')
+.requestBody("{}")
+.data("type",type)
+.data("token",token)
+.data("name", name)  
+.data("birth",birth)
+.data("location",location)
+.data("schoolname",schoolname)
+.data("schooltype",schooltype)
+.data("password",password)
+.ignoreContentType(true)
+.post().text().slice(2,-2).replace(/\'/g,"\"").replace("True","true").replace("False","false"));
+
+return res;
+
+}

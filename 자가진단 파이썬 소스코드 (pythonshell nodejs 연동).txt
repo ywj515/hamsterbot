@@ -1,0 +1,16 @@
+import sys
+import hcskr
+
+let type = sys.argv[1]
+let name = sys.argv[2]
+let birth = sys.argv[3]
+let location = sys.argv[4]
+let schoolname = sys.argv[5]
+let schooltype = sys.argv[6]
+let password = sys.argv[7]
+let token = sys.argv[8]
+
+if(type=="selfcheck") print(hcskr.selfcheck(name,birth,location,schoolname,schooltype,password,token))
+elif(type=="generatetoken") print(hcskr.generatetoken(name,birth,location,schoolname,schooltype,password,token))
+elif(type=="tokenselfcheck") print(hcskr.tokenselfcheck(token))
+else print("ERROR")

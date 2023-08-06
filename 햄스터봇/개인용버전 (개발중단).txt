@@ -1,0 +1,598 @@
+const scriptName = "신청t";
+const enteru = "​".repeat(500);
+const FS = FileStream;
+const grade = 2;
+const pathmain = '/sdcard/messengerbot/dshs/userprofile.txt';
+importClass(org.jsoup.Jsoup);
+if (!FS.read(pathmain)) 
+  FS.write(pathmain, JSON.stringify({}, null, 3));
+function response(room, msg, sender, isGroupChat, replier, ImageDB) {
+  if (isGroupChat == false) {
+    try {
+      if (msg == "초기화") {
+        FS.write(pathmain, JSON.stringify({}, null, 3));
+        replier.reply("초기화가 완료되었습니다. 계정등록 명령어로 계정을 등록하실 수 있습니다.");
+      } else if (msg.startsWith("계정등록")) {
+        if (getUserRegistered()) 
+          replier.reply("이미 계정정보가 등록되어 있습니다. 초기화 하시려면 초기화 를 입력하세요.");
+        else if (msg.split(" ").length <= 2) 
+          replier.reply("잘못된 입력입니다. 다시 입력해주세요.\n Ex) 계정등록 20201500 password");
+        else {
+          var ID = msg.split(" ")[1].replace(/(|)/g, "");
+          var PW = msg.split(" ")[2].replace(/(|)/g, "");
+          var token = doLogin([ID, PW]);
+          var name = getName(token);
+          if (name == "") 
+            replier.reply("⛔ 로그인을 실패하였습니다. 아이디와 비밀번호를 정확하게 입력했는지 확인해주세요.");
+          else {
+            var temp = {
+  "ID": ID, 
+  "PW": PW, 
+  "token": token};
+            FS.write(pathmain, JSON.stringify(temp, null, 4));
+            replier.reply(name + "님 등록 완료!");
+          }
+        }
+      } else if (!getUserRegistered()) 
+        replier.reply("등록된 계정정보가 없습니다.\n계정등록 (아이디) (비밀번호)를 입력하세요.\nEx. 계정등록 20201500 password");
+      else {
+        if(msg=="불"){
+          replier.reply(getWeekendDB(1));
+        }
+        if (msg == "리셋") {
+          replier.reply("재로그인 시도 중...");
+          var info = getUserInfo();
+          var ID = info[0];
+          var PW = info[1];
+          var temp = JSON.parse(FS.read(pathmain));
+          temp.token = doLogin([ID, PW]);
+          FS.write(pathmain, JSON.stringify(temp, null, 4));
+          var name = getName(temp.token);
+          replier.reply(name + "님 재로그인 완료!");
+        } else if (msg == ("자습상태") || msg == "자습 상태") {
+          replier.reply("불러오는 중..");
+          replier.reply(doSelfStudyCheck(false, true));
+        } else if (msg == ("벌점")) {
+          replier.reply("불러오는 중..");
+          replier.reply(doPointCheck());
+        } else if (msg == "주말상태" || msg == "주말 상태") {
+          replier.reply("불러오는 중..");
+          replier.reply(doWeekendCheck(false, true));
+        } else if ((msg == "자습번호" || msg == "자습 번호")) {
+          replier.reply("불러오는 중..");
+          replier.reply("'자습신청'을 입력하고, 교실코드를 입력하세요." + enteru + "\n\n" + "ex)\n 자습신청 1/2/3\n 자습신청 1//3\n 자습신청 a12\n 자습신청 12a\n -신청하지 않을 자습시간은 빈칸으로 해주세요.\n -취소하실 자습시간에는 0을 입력해주세요.\n -모든 자습시간을 같은 교실로 신청하시려면 교실코드를 하나만 적고 a나 A를 같이 입력해주세요.\n\n" + "🔴봇으로 자습신청을 하여 발생한 문제는 개발자가 책임지지 않으며 사용자 본인에게 책임이 있습니다.\n\n" + "====================\n\n《교실 목록》\n" + getRoomNumberList(0));
+        } else if ((msg == "자습인원") || (msg == "자습 인원")) {
+          if (!getSelfStudyTime()) 
+            replier.reply("⛔ 자습신청 시간이 아니므로 확인할 수 없습니다.\n(신청시간: 08:00~18:30)");
+          else {
+            replier.reply("불러오는 중.. (10초 이상 소요)");
+            replier.reply("ℹ자습장소 인원현황ℹ" + enteru + "\n\n" + doSelfStudyCheckNum());
+          }
+        } else if (msg.startsWith("자습신청") || msg.startsWith("자습 신청")) {
+          if (getWeekendTime()) 
+            replier.reply("⚠️오늘은 주말입니다. 주말신청을 해주시기 바랍니다.");
+          else if (!getSelfStudyTime()) 
+            replier.reply("⛔ 자습신청 시간이 아닙니다.\n(신청시간: 08:00~18:30)");
+          else {
+            if (msg.indexOf("A") != -1 || msg.indexOf("a") != -1) {
+              replier.reply("신청하는 중...\n(⚠️신청이 끝나기 전까지 자습신청을 절대 재시도 하지 말아주세요.)\n🔴봇으로 자습신청을 하여 발생한 문제는 개발자가 책임지지 않으며 사용자 본인에게 책임이 있습니다.");
+              var info = doSelfStudyCheck(true, false);
+              var tp = msg.substr(5).replace(/A|a/g, "");
+              var apply = [tp, tp, tp];
+              apply = doSelfStudyConvert(apply);
+              for (var i = 0; i < 3; i++) {
+                if (apply[i] == "") 
+                  continue;
+                if (info[i] != "") 
+                  doSelfStudySubmit(apply[i], i + 1, info[i]);
+                if (apply[i] != "delete") 
+                  doSelfStudySubmit(apply[i], i + 1, "save");
+              }
+              replier.reply("신청 완료!\n\n" + doSelfStudyCheck(false, true));
+            } else if (msg.substr(6).split("/")[2] == undefined) 
+              replier.reply("입력이 잘못되었는지 확인 후 다시 입력해주세요.");
+            else {
+              replier.reply("신청하는 중...\n(⚠️신청이 끝나기 전까지 자습신청을 절대 재시도 하지 말아주세요.)\n🔴봇으로 자습신청을 하여 발생한 문제는 개발자가 책임지지 않으며 사용자 본인에게 책임이 있습니다.");
+              var info = doSelfStudyCheck(true, false);
+              var apply = msg.substr(6).split("/");
+              if (apply[0] == apply[1] && apply[1] == apply[2]) {
+                replier.reply("[팁] 자습신청 " + apply[1] + "a 로 입력하시면 더 편하게 신청하실 수 있습니다!");
+              }
+              apply = doSelfStudyConvert(apply);
+              for (var i = 0; i < 3; i++) {
+                if (apply[i] == "") 
+                  continue;
+                if (info[i] != "") 
+                  doSelfStudySubmit(apply[i], i + 1, info[i]);
+                if (apply[i] != "delete") 
+                  doSelfStudySubmit(apply[i], i + 1, "save");
+              }
+              replier.reply("신청 완료!\n\n" + doSelfStudyCheck(false, true));
+            }
+          }
+        } else if ((msg == "주말번호" || msg == "주말 번호")) {
+          replier.reply("불러오는 중..");
+          var number = getUserInfo()[0];
+          var sinfoa = "[[토요일]]\n《시간표(8)》\n (1)오전자율   09:00 ~ 12:00\n (2)꿈지락      13:00 ~ 16:20\n (3)오후자율1 13:00 ~ 14:40\n (4)오후자율2 14:50 ~ 16:20\n (5)오후자율3 16:30 ~ 18:00\n (6)야간자율1 19:30 ~ 21:00\n (7)야간자율2 21:30 ~ 22:30\n (8)야간자율3 22:40 ~ 23:40\n\n《교실 목록》\n";
+          var sinfob = "[[일요일]]\n《시간표(7)》\n (1)오전자율   09:00 ~ 12:00\n (2)오후자율1 13:00 ~ 14:40\n (3)오후자율2 14:50 ~ 16:20\n (4)오후자율3 16:30 ~ 18:00\n (5)야간자율1 19:30 ~ 21:00\n (6)야간자율2 21:30 ~ 22:40\n (7)야간자율3 22:40 ~ 23:40\n\n《교실 목록》\n";
+          var iinfo = getRoomNumberList(1);
+          var iiinfo = getRoomNumberList(2);
+          replier.reply("'주말신청'을 입력하고 요일과 교실코드를 양식에 맞게 입력해주세요." + enteru + "\n\n" + "ℹ방법1ℹ\n주말신청 (요일)/(번호1)/(번호2)/....\nex) 주말신청 토/1/2/3/4/5/6/7/8\n\nℹ방법2ℹ\n주말신청\n(요일)\n(교시번호): (교실번호) 줄바꿈으로 구분하여 입력.\n\nex)\n주말신청\n토\n1: 5\n3: 1\n6: 0\n\nℹ방법3ℹ\n주말신청 (요일,교실코드,a또는A)를 순서 상관없이 입력\n-> 모든 자습시간을 단일 교실로 신청.\nex) 주말신청 토a20\n\n신청하지 않을 자습시간은 빈칸으로 해주세요.\n취소하실 자습시간에는 0을 입력해주세요.\n\n" + "🔴봇으로 자습신청을 하여 발생한 문제는 개발자가 책임지지 않으며 사용자 본인에게 책임이 있습니다.\n\n" +  "====================\n\n" + sinfoa + iinfo + "\n\n\n" + sinfob + iiinfo);
+        } else if ((msg.startsWith("주말인원")) || (msg.startsWith("주말 인원"))) {
+          if (msg.indexOf("토") != -1) {
+            var n = 0;
+            var week = "토요일";
+          } else if (msg.indexOf("일") != -1) {
+            var n = 1;
+            var week = "일요일";
+          } else {
+            replier.reply("⚠️올바른 요일을 포함하여 다시 입력해주세요.\nex) 주말인원 토");
+            return 0;
+          }
+          replier.reply("불러오는 중.. (15초 이상 소요)");
+          replier.reply("ℹ" + week + " 주말자습장소 인원현황ℹ" + enteru + "\n\n" + doWeekendCheckNum(n));
+        } else if (msg.startsWith("주말신청") || msg.startsWith("주말 신청")) {
+          if (!weekendUtil(room,msg, "CheckTime")) 
+            return 0;
+          else {
+            replier.reply("신청하는 중...\n(⚠️신청이 끝나기 전까지 자습신청을 절대 재시도 하지 말아주세요.)\n🔴봇으로 자습신청을 하여 발생한 문제는 개발자가 책임지지 않으며 사용자 본인에게 책임이 있습니다.");
+            var config = weekendUtil(room,msg, "SubmitConfig");
+            if (!config) 
+              return 0;
+            var result = doWeekendCheck(true, false);
+            var weeknum = result.split("var chk_week = \"")[1].split("\"")[0];
+            var winfo = getFileParse(3);
+            var i = 0;
+            var pid = winfo[config.n].pid;
+            var command = doWeekendConvert(config.command, config.n);
+            result = result.split(config.str)[1].split(config.str2)[0].split("<th>");
+            var stamp = result[7].split(config.weekind)[1].split("_")[1];
+            var chkno = [];
+            var dis = [];
+            for (var i = 7; i < result.length; i++) {
+              if (i % 2 == 1) {
+                if (result[i].indexOf("취소") != -1) 
+                  dis.push("취소");
+                else 
+                  dis.push("");
+                var t2 = result[i].split("id=")[1].split(">")[0].split("_");
+                chkno.push(t2[5]);
+              }
+            }
+            for (var i = 0; i < pid.length; i++) {
+              if (command[i + 1] == "" || command[i + 1] == undefined) 
+                continue;
+              if (dis[i] == "취소" || command[i + 1] == "delete") 
+                doWeekendSubmit("delete", chkno[i], pid[i], String(i + 1), stamp, config.weekind, weeknum, "");              //일단 취소.
+              if (command[i + 1] != "delete") 
+                doWeekendSubmit("save", chkno[i], pid[i], String(i + 1), stamp, config.weekind, weeknum, command[i + 1]);              //취소가 아니면 신청.
+            }
+            replier.reply("신청 완료!\n\n" + doWeekendCheck(false, true));
+          }
+        }
+      }
+    }    catch (error) {
+  replier.reply("⚠️오류 발생!⚠️\n/리셋 명령어를 사용한 뒤 재시도해주세요!\n오류가 계속되는 경우 에러 메시지를 참고하세요.\n" + "Error Name: " + error.name + "\nError Message: " + error.message + "\nLine Number: " + error.lineNumber);
+}
+  }
+}
+function getToken() {
+  //토큰값이 유효한지 확인하고 유효한 토큰값을 리턴함.
+  var arr = getUserInfo();  //유저정보를 로컬에서 가져옴.
+  if (getName(arr[2]) == "") {
+    //이름을 서버에서 가져옴. 이름이 비어있으면 토큰값이 무효한것.
+    var temp = JSON.parse(FS.read(pathmain));
+    temp.token = doLogin(arr);    //서버에 새로 로그인하여 토큰값을 가져오고 로컬에 저장함.
+    FS.write(pathmain, JSON.stringify(temp, null, 4));
+    return temp.token;
+  } else {
+    return arr[2];
+  }
+}
+function getUserInfo() {
+  //유저정보를 로컬에서 가져와서 리턴함.
+  var list = JSON.parse(FS.read(pathmain));
+  if (Object.keys(list).length == 0) 
+    return false;
+  return [list.ID, list.PW, list.token];
+}
+function getUserRegistered() {
+  //로컬에 등록이 되어있는지 확인하고 리턴함.
+  var list = JSON.parse(FS.read(pathmain));
+  if (Object.keys(list).length == 0) 
+    return false;
+  else 
+    return true;
+}
+function getName(token) {
+  //받은 토큰을 사용해 서버에서 이름을 가져오고 리턴함.
+  try {
+    var result = Jsoup.connect("https://djs.weschool.kr/sph_manager/prep/registration.php").header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).post().text();
+  }  catch (error) {
+  return "";
+}
+  try {
+    var gotname = result.split("관리 시스템")[1].substr(15).split("(")[0].trim();
+    return gotname;
+  }  catch (error) {
+  return "";
+}
+}
+function isUser(element) {
+  if (element.User == this) {
+    return true;
+  }
+}
+function isID(element) {
+  if (element.ID == this) {
+    return true;
+  }
+}
+function doLogin(arr) {
+  //받은 아이디, 패스워드로 로그인하여 서버에서 토큰값을 새로 받아 리턴함.
+  var ID = arr[0];
+  var PW = arr[1];
+  var result = Jsoup.connect("https://djs.weschool.kr/_login").header("Content-Type", "application/x-www-form-urlencoded").data("url", "/").data("UID", ID).data("PASSWD", PW).ignoreContentType(true).ignoreHttpErrors(true).method(org.jsoup.Connection.Method.POST).execute().cookies().get("COBEE_AUTH");
+  result = JSON.stringify(result).replace("\"", "").replace("\"", "");
+  return "COBEE_AUTH=" + result + ";Path=/;HttpOnly";
+}
+function doPointCheck() {
+  //벌점을 확인함.
+  var token = getToken();
+  var number= grade;
+  var resultraw = Jsoup.connect("https://djs.weschool.kr/sph_manager/point/index.php?s_group=" + number).header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).post().text();
+  var pTotal = resultraw.split("누적점수 (")[1].split(")")[0];
+  var pList = new Array();
+  var pListRaw = resultraw.split("누적 ")[1];
+  var result = "벌점 목록 (합계 " + pTotal + ")\n" + enteru + "\n";
+  if (pListRaw != undefined) {
+    pListRaw = pListRaw.split("2021-");
+    pListRaw[1] = pListRaw[1].slice(0, -(pTotal.length) - 1);
+    for (var i = 1; i <= pListRaw.length - 1; i++) 
+      pList[pList.length] = pListRaw[i].replace("-", "/");
+    for (var i = 1; i <= pListRaw.length - 1; i++) 
+      result += pList[i - 1] + "\n";
+  }
+  return result;
+}
+function getWeekendTime() {
+  var time = new Date();
+  var yo = time.getDay();
+  if (yo == 6 || yo == 0) 
+    return true;
+  else 
+    return false;
+}
+function doSelfStudyCheckNum() {
+  var token = getToken();
+  var pnumbers = [];
+  var pnumbertot = [];
+  var pnames = [];
+  var result = "";
+  for (var n = 0; n < 3; n++) {
+    pnumbers[n] = [];
+    var resultraw = Jsoup.connect("https://djs.weschool.kr/sph_manager/prep/registration.php?mode=apply&order_no=" + (n + 1) + "&chk_no=").header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).post().text();
+    result = resultraw.split("좌석");
+    for (var i = 2; i < result.length; i++) {
+      temp = result[i].split(" ");
+      pnumbers[n].push(temp[2].replace(/[(-)]/g, ""));
+    }
+  }
+  for (var i = 2; i <= result.length; i++) {
+    var temp = result[i - 1].split(" ");
+    pnames.push(String(result[i - 2].substring(result[i - 2].indexOf(")") + 2, result[i - 2].length)));
+    pnumbertot.push(temp[1]);
+  }
+  var res = "";
+  for (var i = 6; i < pnumbertot.length; i++) 
+    res += "(" + (i + 2) + ") " + pnames[i] + ": (" + pnumbers[0][i - 1] + "," + pnumbers[1][i - 1] + "," + pnumbers[2][i - 1] + "/" + pnumbertot[i] + ")\n\n";
+  return res;
+}
+function doSelfStudySubmit(fid, num, m) {
+  var token = getToken();
+  if (m == "save") 
+    Jsoup.connect("https://djs.weschool.kr/sph_manager/prep/registration.php").header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).data("p_mode", "save").data("chk_mode", "seat_apply").data("chk_type", "seat").data("chk_no", "0").data("chk_fid", fid).data("chk_order_no", String(num)).ignoreContentType(true).ignoreHttpErrors(true).post();
+  else 
+    Jsoup.connect("https://djs.weschool.kr/sph_manager/prep/registration.php?mode=delete&order_no=" + num + "&chk_no=" + m).header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).get();
+}
+function getSelfStudyTime() {
+  var time = new Date();
+  var hour = time.getHours();
+  var min = time.getMinutes();
+  if ((hour < 18 && hour >= 8) || (hour == 18 && min < 30)) 
+    return true;
+  else 
+    return false;
+}
+function doSelfStudyCheck(f1, f2) {
+  var token = getToken();
+  var result = Jsoup.connect("https://djs.weschool.kr/sph_manager/prep/registration.php").header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).post();
+  try {
+    if (f1 == true) {
+      //취소용 코드 돌려주기
+      var resultst = result.toString();
+      var num = new Array();
+      var tp = resultst.split("btn_app_1_")[1].split("\"");
+      num.push(tp[0]);
+      tp = resultst.split("btn_app_2_")[1].split("\"");
+      num.push(tp[0]);
+      tp = resultst.split("btn_app_3_")[1].split("\"");
+      num.push(tp[0]);
+      return num;
+    }
+    if (f2 == true) {
+      //신청목록 돌려주기
+      var resulttx = result.text();
+      var J1 = resulttx.split("1 자율학습 ")[1].split(" 2 자율학습")[0].replace("완료", "").replace("취소", "").replace("신청", "").replace("수정/", "").replace("대기", "⚠️대기");
+      var J2 = resulttx.split("2 자율학습 ")[1].split(" 3 자율학습")[0].replace("완료", "").replace("취소", "").replace("신청", "").replace("수정/", "").replace("대기", "⚠️대기");
+      var J3 = resulttx.split("3 자율학습 ")[1].replace("완료", "").replace("취소", "").replace("신청", "").replace("수정/", "").replace("대기", "⚠️대기");
+      if (J1 == "") 
+        J1 = "(신청 안됨)";
+      if (J2 == "") 
+        J2 = "(신청 안됨)";
+      if (J3 == "") 
+        J3 = "(신청 안됨)";
+      var restring = "1자: " + J1 + "\n2자: " + J2 + "\n3자: " + J3;
+      return restring;
+    }
+  }  catch (error) {
+  return doSelfStudyCheck(f1, f2);
+}
+}
+function doSelfStudyConvert(arr) {
+  var convert = getFileParse(4);
+  for (var i = 0; i < 3; i++) {
+    if (arr[i] == undefined) 
+      arr[i] = "";
+    if (arr[i] != "") 
+      arr[i] = convert[Number(arr[i])];
+  }
+  return arr;
+}
+function doSelfStudyNameConvert(arr, number) {
+  var names = getRoomNumberList(number, 0);
+  return [names[Number(arr[0])], names[Number(arr[1])], names[Number(arr[2])]];
+}
+function weekendUtil(sender,msg, type) {
+  if (msg.indexOf("토") != -1) var n = 0;
+  else if (msg.indexOf("일") != -1) var n = 1;
+  else {Api.replyRoom(sender,"⚠️요일을 포함하여 다시 입력해주세요."); return false;}
+  if (type == "CheckTime") {
+    if (n == 0) {
+      if (getWeekendSatTime()) return true;
+      else {Api.replyRoom(sender, "⛔신청 시간이 아닙니다."); return false;}
+    } else if (n == 1) {
+      if (getWeekendSatTime()) return true;
+      else {Api.replyRoom(sender, "⛔신청 시간이 아닙니다."); return false;}
+    }
+  } else if (type == "CheckStatus") {
+    if (n == 0) 
+      return {n: 0, week: "토요일"};
+    else if (n == 1) 
+      return {n: 1, week: "일요일"};
+  } else if (type == "SubmitConfig") {
+    if (msg.substr(5).indexOf("a") != -1 || msg.substr(5).indexOf("A") != -1) {
+      var tp = msg.substr(5).replace(/A|a|토|일|공/g, "");
+      var command = ["a", tp, tp, tp, tp, tp, tp, tp, tp];
+      if (n == 0) 
+        return {n: 0, weekind: "saturday", str: "<!-- 토요일 방과후 프로그램 신청 --> ", str2: "<!-- 토요일 방과후 끝 --> ", command: command};
+      if (n == 1) 
+        return {n: 1, weekind: "sunday", str: "<!-- 일요일 방과후 프로그램 신청 --> ", str2: "<!-- 일요일 방과후 끝 --> ", command: command};
+    }
+    var command1 = msg.substr(5).split("/");
+    var command2 = msg.split("\n");
+    if (command2[1] == undefined && command1[1] != undefined) {
+      if (n == 0) 
+        return  {n: 0, weekind: "saturday", str: "<!-- 토요일 방과후 프로그램 신청 --> ", str2: "<!-- 토요일 방과후 끝 --> ", command: command1};
+      if (n == 1) 
+        return {n: 1, weekind: "sunday", str: "<!-- 일요일 방과후 프로그램 신청 --> ", str2: "<!-- 일요일 방과후 끝 --> ", command: command1};
+    } else if (command2[1] != undefined && command1[1] == undefined) {
+      var command = [, , , , , , , , ,];
+      for (var ik = 2; ik < command2.length; ik++) {
+        var tmp = command2[ik].split(":");
+        command[Number(tmp[0])] = tmp[1];
+      }
+      if (n == 0) 
+        return {n: 0, weekind: "saturday", str: "<!-- 토요일 방과후 프로그램 신청 --> ", str2: "<!-- 토요일 방과후 끝 --> ", command: command};
+      if (n == 1) 
+        return {n: 1, weekind: "sunday", str: "<!-- 일요일 방과후 프로그램 신청 --> ", str2: "<!-- 일요일 방과후 끝 --> ", command: command};
+    } else {
+      Api.replyRoom(sender, "⚠️입력이 잘못되었습니다. 형식에 맞게 다시 입력해주세요.");
+      return false;
+    }
+  }
+}
+function doWeekendCheckNum(n) {
+  var token = getToken();
+  var result = doWeekendCheck(true, false);
+  var weeknum = result.split("var chk_week = \"")[1].split("\"")[0];
+  var winfo = getFileParse(3);
+  var str = ["<!-- 토요일 방과후 프로그램 신청 --> ", "<!-- 일요일 방과후 프로그램 신청 --> ", "<!-- 공휴일 방과후 프로그램 신청 --> "];
+  var str2 = ["<!-- 토요일 방과후 끝 --> ", "<!-- 일요일 방과후 끝 --> ", "<!-- 주말 방과후 끝 --> "];
+  var str3 = ["saturday", "sunday"];
+  var i = 0;
+  var pid = winfo[n].pid;
+  var weekind = str3[n];
+  resultm = result.split(str[n])[1].split(str2[n])[0].split("<th>");
+  var stamp = resultm[7].split(weekind)[1].split("_")[1];
+  var chkno = [];
+  var pnumbers = [];
+  for (var i = 7; i < resultm.length; i++) {
+    if (i % 2 == 1) {
+      var t2 = resultm[i].split("id=")[1].split(">")[0].split("_");
+      chkno.push(t2[5]);
+    }
+  }
+  for (var i = 0; i < pid.length; i++) {
+    pnumbers.push(doWeekendLoadNum(chkno[i], pid[i], String(i + 1), stamp, weekind, weeknum, "", token));
+  }
+  var names = getFileParse(n + 1);
+  var pnumbertot = doWeekendLoadNum(chkno[0], pid[0], 1, stamp, weekind, weeknum, "tot", token);
+  var res = "";
+  for (var i = 6; i < pnumbertot.length; i++) {
+    res += "(" + (i + 2) + ") " + names[i + 2] + ":\n\t=> ";
+    for (var j = 0; j < pnumbers.length; j++) {
+      res += pnumbers[j][i - 1];
+      if (j == 0 || j == pnumbers.length - 4) 
+        res += '|';
+      else 
+        res += ',';
+    }
+    res = res.substr(0, res.length - 1);
+    res += " (정원: " + pnumbertot[i] + ") \n\n";
+  }
+  return res;
+}
+function doWeekendLoadNum(chkno, pid, orderno, stamp, kind, chkweek, flag, token) {
+  var resultraw = Jsoup.connect("https://djs.weschool.kr/sph_manager/weekend/index.php?mode=layer_apply&kind=" + kind + "&stamp=" + stamp + "&order_no=" + orderno + "&chk_no=" + chkno + "&chk_week=" + chkweek + "&pid=" + pid).header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).get().text();
+  result = resultraw.split("좌석");
+  if (flag == 'tot') {
+    var pnumbertot = [];
+    for (var i = 2; i <= result.length; i++) {
+      var temp = result[i - 1].split(" ");
+      pnumbertot.push(temp[1]);
+    }
+    return pnumbertot;
+  } else {
+    var pnumber = [];
+    for (var i = 2; i < result.length; i++) {
+      temp = result[i].split(" ");
+      pnumber.push(temp[2].replace(/[(-)]/g, ""));
+    }
+    return pnumber;
+  }
+}
+function doWeekendCheck(f1, f2) {
+  var token = getToken();
+  var result = Jsoup.connect("https://djs.weschool.kr/sph_manager/weekend/index.php").header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).post();
+  if (f1 == true) {
+    return result.toString();
+  } else if (f2 == true) {
+    result = result.text().replace("(1인1기 1,2학년)", "").replace(/\(주말프로그램\)/g, "").replace(/ 자율학습/g, " 자율").replace("자율학습", " 자율").replace(/\(2학년\)/, "");
+    var J1 = "";
+    if (result.split("공휴일")[1] != undefined) 
+      J1 = "<공휴일>\n " + result.split("공휴일")[1].split("토요일")[0].substr(94).replace(/완료/g, "").replace(/취소/g, "\n").replace(/신청/g, "\n") + "\n";
+    var J2 = result.split("토요일")[1].split("일요일")[0].substr(94).replace(/완료/g, "").replace(/취소/g, "\n").replace(/신청/g, "\n").replace("오전 자율", "오전 자율  ").replace("꿈지락", "꿈지락      ");
+    var J3 = result.split("일요일")[1].replace(/완료/g, "").substr(91).replace(/취소/g, "\n").replace(/신청/g, "\n").replace("오전 자율", "오전 자율  ");
+    return J1 + "<토요일>\n " + J2 + "\n<일요일>\n" + J3;
+  }
+}
+function doWeekendSubmit(mode, chkno, pid, orderno, stamp, kind, chkweek, fid) {
+  var token = getToken();
+  if (mode == "delete") {
+    Jsoup.connect("https://djs.weschool.kr/sph_manager/weekend/index.php?mode=" + mode + "&kind=" + kind + "&stamp=" + stamp + "&order_no=" + orderno + "&chk_no=" + chkno + "&chk_week=" + chkweek + "&pid=" + pid).header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).post();
+  } else if (mode == "save") {
+    Jsoup.connect("https://djs.weschool.kr/sph_manager/weekend/index.php").header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).data("chk_mode", "layer_seat_apply").data("chk_type", "seat").data("p_mode", "save").data("kind", kind).data("chk_no", chkno).data("chk_week", chkweek).data("pid", pid).data("chk_fid", fid).data("chk_order_no", orderno).data("stamp", stamp).ignoreContentType(true).ignoreHttpErrors(true).post();
+  }
+}
+function doWeekendConvert(qarr, qn) {
+  var qconvert = getFileParse(3);
+  for (var qi = 1; qi < qarr.length; qi++) {
+    if (qarr[qi] != "") 
+      qarr[qi] = qconvert[qn].fid[Number(qarr[qi])];
+  }
+  return qarr;
+}
+function doWeekendNameConvert(arr, number, n, preset) {
+  var result = [""];
+  var names = getFileParse(number, n + 1);
+  for (var i = 1; i < arr.length; i++) {
+    if (arr[i] == "" || arr[i] == undefined || arr[i] == "0") {
+      if (arr[i] == "0" || preset == undefined || preset[i] == undefined) 
+        result.push("(설정 안됨)");
+      else 
+        result.push(preset[i]);
+    } else 
+      result.push(names[Number(arr[i])]);
+    if (result[i - 1] == undefined) 
+      return "nope";
+  }
+  return result;
+}
+function getWeekendSatTime() {
+  var time = new Date();
+  var hour = time.getHours();
+  var yo = time.getDay();
+  if (((yo == 5) && (hour >= 22)) || yo == 6) 
+    return false;
+  else 
+    return true;
+}
+function getWeekendSunTime() {
+  var time = new Date();
+  var hour = time.getHours();
+  var yo = time.getDay();
+  if ((yo == 6) && (hour >= 22) || yo == 0) 
+    return false;
+  else 
+    return true;
+}
+function format(st, names) {
+  return st.replace(/\{(\d+)\}/g, function(match, num) {
+  return " " + names[num];
+});
+}
+function getFileParse(type) {
+  var filename = ["selfstudy_weekday_namelist.txt", "selfstudy_sat_namelist.txt", "selfstudy_sun_namelist.txt", "weekenddb.txt", "weekdaydb.txt"];
+  var path = "/sdcard/messengerbot/dshs/" + grade + "/" + filename[type];
+  return JSON.parse(FS.read(path));
+}
+function getRoomNumberList(type) {
+  var db = getFileParse(type);
+  var result = "";
+  for (var i = 1; i < db.length; i++) {
+    result += "(" + i + ")" + " " + db[i] + "\n";
+  }
+  return result;
+}
+
+
+
+
+
+
+
+
+
+function getWeekendDB(n) {
+  var token = getToken();
+  var result = doWeekendCheck(true, false);
+  var weeknum = result.split("var chk_week = \"")[1].split("\"")[0];
+  var winfo = getFileParse(3);
+  var str = ["<!-- 토요일 방과후 프로그램 신청 --> ", "<!-- 일요일 방과후 프로그램 신청 --> ", "<!-- 공휴일 방과후 프로그램 신청 --> "];
+  var str2 = ["<!-- 토요일 방과후 끝 --> ", "<!-- 일요일 방과후 끝 --> ", "<!-- 주말 방과후 끝 --> "];
+  var str3 = ["saturday", "sunday"];
+  var i = 0;
+  var pid = winfo[n].pid;
+  var weekind = str3[n];
+  resultm = result.split(str[n])[1].split(str2[n])[0].split("<th>");
+  var stamp = resultm[7].split(weekind)[1].split("_")[1];
+  var chkno = [];
+  var pnumbers = [];
+  for (var i = 7; i < resultm.length; i++) {
+    if (i % 2 == 1) {
+      var t2 = resultm[i].split("id=")[1].split(">")[0].split("_");
+      chkno.push(t2[5]);
+    }
+  }
+  return getWeekendDBcon(chkno[i], pid[i], "1", stamp, weekind, weeknum, "", token);
+  
+}
+function getWeekendDBcon(chkno, pid, orderno, stamp, kind, chkweek, flag, token) {
+  var resultraw = Jsoup.connect("https://djs.weschool.kr/sph_manager/weekend/index.php?mode=layer_apply&kind=" + kind + "&stamp=" + stamp + "&order_no=" + orderno + "&chk_no=" + chkno + "&chk_week=" + chkweek + "&pid=" + pid).header("Content-Type", "application/x-www-form-urlencoded").header("Cookie", token).ignoreContentType(true).ignoreHttpErrors(true).get();
+  result=resultraw.toString();
+  arr=result.split("<th>");
+  var namelist=[];
+  var pidlist=["delete"];
+  for(var i=9;i<arr.length;i++){
+    namelist.push(arr[i].split("</th>")[0].replace("amp;",""));
+    pidlist.push(arr[i].split("id=\"")[1].split("\"")[0]);
+  }
+  return String(namelist)+"\n\n"+String(pidlist);
+}
+
+
+
+
+
+

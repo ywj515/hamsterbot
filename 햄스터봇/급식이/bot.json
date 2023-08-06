@@ -1,0 +1,17 @@
+{
+    "main": "급식이.js",
+    "option": {
+        "apiLevel": 1,
+        "useUnifiedParams": false,
+        "useBabel": false,
+        "debugRoom": {
+            "name": "ㄴㅇ",
+            "sender": "DSHS22",
+            "isGroupChat": false,
+            "packageName": "com.xfl.msgbot"
+        },
+        "scriptPower": true,
+        "backupDBOnDelete": true,
+        "offOnRuntimeError": false
+    }
+}
